@@ -179,12 +179,14 @@ class HomeAssistantClient:
             True wenn erfolgreich
         """
         try:
-            # Verwende todo.add_item Service
+            # Verwende todo.add_item Service mit entity_id direkt im Payload
             self.call_service(
                 domain="todo",
                 service="add_item",
-                target={"entity_id": self.shopping_list_entity},
-                data={"item": item}
+                data={
+                    "entity_id": self.shopping_list_entity,
+                    "item": item
+                }
             )
             logger.info(f"Zur Alexa Einkaufsliste hinzugefügt: {item}")
             return True
