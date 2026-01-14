@@ -66,11 +66,62 @@ Nach der Konfiguration solltest du folgende Entities haben:
 
 ### 3. Installation
 
-#### Option A: Docker (empfohlen)
+#### Option A: Docker auf frischem Linux-Server (für Anfänger)
+
+Wenn du einen frischen Debian/Ubuntu-Server hast, installiere zuerst die Voraussetzungen:
+
+```bash
+# System aktualisieren
+sudo apt update && sudo apt upgrade -y
+
+# Git und Docker installieren
+sudo apt install -y git docker.io docker-compose
+
+# Docker ohne sudo nutzen (nach diesem Befehl neu einloggen oder 'newgrp docker' ausführen)
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Prüfen ob alles funktioniert
+docker --version
+git --version
+```
+
+Dann das Projekt installieren:
 
 ```bash
 # Repository klonen
-git clone https://github.com/yourusername/Grocy_Amazon_AutoBuy.git
+git clone https://github.com/freezweb/Grocy_Amazon_AutoBuy.git
+cd Grocy_Amazon_AutoBuy
+
+# Konfiguration erstellen
+cp .env.example .env
+nano .env  # Werte anpassen (siehe Abschnitt Konfiguration)
+
+# Container bauen und starten
+docker-compose up -d
+
+# Logs prüfen (Strg+C zum Beenden)
+docker-compose logs -f
+
+# Status prüfen
+docker-compose ps
+```
+
+**Nützliche Docker-Befehle:**
+```bash
+docker-compose stop      # Stoppen
+docker-compose start     # Starten
+docker-compose restart   # Neustarten
+docker-compose down      # Komplett beenden
+docker-compose pull      # Update holen
+docker-compose up -d     # Nach Update neu starten
+```
+
+#### Option B: Docker (wenn Git & Docker bereits installiert)
+
+```bash
+# Repository klonen
+git clone https://github.com/freezweb/Grocy_Amazon_AutoBuy.git
 cd Grocy_Amazon_AutoBuy
 
 # Konfiguration erstellen
@@ -84,11 +135,11 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-#### Option B: Lokale Installation
+#### Option C: Lokale Python-Installation (ohne Docker)
 
 ```bash
 # Repository klonen
-git clone https://github.com/yourusername/Grocy_Amazon_AutoBuy.git
+git clone https://github.com/freezweb/Grocy_Amazon_AutoBuy.git
 cd Grocy_Amazon_AutoBuy
 
 # Virtuelle Umgebung erstellen
