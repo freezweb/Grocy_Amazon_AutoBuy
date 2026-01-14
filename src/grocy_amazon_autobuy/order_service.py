@@ -363,19 +363,16 @@ class OrderService:
             logger.error(f"Home Assistant Benachrichtigung fehlgeschlagen: {e}")
         
         # Telegram Benachrichtigung (mit klickbarem Link)
-        if self.telegram:
+        if self.telegram and not failed:
             try:
                 self.telegram.send_order_notification(
                     product_name=product.name,
                     quantity=order.quantity,
-                    unit=product.amazon_order_unit or product.qu_name,
                     asin=product.amazon_asin,
-                    cart_url=cart_url,
-                    stock_current=product.stock_amount,
-                    stock_min=product.stock_min_amount,
-                    failed=failed,
-                    dry_run=dry_run,
-                    error_message=order.error_message if failed else None
+                    current_stock=product.stock_amount,
+                    min_stock=product.stock_min_amount,
+                    unit=product.amazon_order_unit or product.qu_name,
+                    cart_url=cart_url
                 )
             except Exception as e:
                 logger.error(f"Telegram Benachrichtigung fehlgeschlagen: {e}")
