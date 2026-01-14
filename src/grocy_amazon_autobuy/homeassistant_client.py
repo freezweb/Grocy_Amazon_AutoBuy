@@ -262,14 +262,16 @@ class HomeAssistantClient:
             command = f"Bestelle {product_name}"
         
         try:
-            # Verwende "command" type für direkte Alexa-Befehle
+            # Verwende alexa_media notify Service für Sprachbefehle
             self.call_service(
-                domain="media_player",
-                service="play_media",
-                target={"entity_id": target_entity},
+                domain="notify",
+                service="alexa_media",
                 data={
-                    "media_content_type": "custom",
-                    "media_content_id": command,
+                    "message": command,
+                    "target": target_entity,
+                    "data": {
+                        "type": "announce"  # announce für Befehle
+                    }
                 }
             )
             logger.info(f"Alexa Bestellbefehl gesendet: {command}")
@@ -301,13 +303,16 @@ class HomeAssistantClient:
         command = f"Bestelle ASIN {asin}"
         
         try:
+            # Verwende alexa_media notify Service für Sprachbefehle
             self.call_service(
-                domain="media_player",
-                service="play_media",
-                target={"entity_id": target_entity},
+                domain="notify",
+                service="alexa_media",
                 data={
-                    "media_content_type": "custom",
-                    "media_content_id": command,
+                    "message": command,
+                    "target": target_entity,
+                    "data": {
+                        "type": "announce"
+                    }
                 }
             )
             logger.info(f"Alexa ASIN-Bestellung gesendet: {asin}")
