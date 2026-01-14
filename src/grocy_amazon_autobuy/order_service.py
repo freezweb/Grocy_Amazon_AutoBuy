@@ -372,7 +372,7 @@ class OrderService:
                     asin=product.amazon_asin,
                     current_stock=product.stock_amount,
                     min_stock=product.stock_min_amount,
-                    unit=product.amazon_order_unit or product.qu_name,
+                    unit=product.qu_name,
                     cart_url=cart_url
                 )
             except Exception as e:
