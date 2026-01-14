@@ -13,10 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Python-Abhängigkeiten zuerst (für besseres Caching)
 COPY pyproject.toml .
+COPY README.md .
 COPY src/ src/
 
-# Installation
-RUN pip install --no-cache-dir -e .
+# Installation (nicht editierbar da Container)
+RUN pip install --no-cache-dir .
 
 # Datenverzeichnis
 RUN mkdir -p /app/data
