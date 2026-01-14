@@ -66,7 +66,33 @@ Nach der Konfiguration solltest du folgende Entities haben:
 
 ### 3. Installation
 
-#### Option A: Docker auf frischem Linux-Server (für Anfänger)
+#### 🚀 Schnell-Installation (empfohlen für Anfänger)
+
+Ein interaktives Setup-Script führt dich durch die komplette Installation:
+
+```bash
+# Nur diesen einen Befehl ausführen - der Rest wird interaktiv abgefragt!
+curl -fsSL https://raw.githubusercontent.com/freezweb/Grocy_Amazon_AutoBuy/main/setup.sh | bash
+```
+
+Oder wenn du das Repository bereits geklont hast:
+
+```bash
+cd Grocy_Amazon_AutoBuy
+chmod +x setup.sh
+./setup.sh
+```
+
+Das Setup-Script:
+- ✅ Installiert fehlende Pakete (git, docker, docker-compose)
+- ✅ Erkennt automatisch `docker-compose` vs `docker compose`
+- ✅ Fragt alle Konfigurationswerte interaktiv ab
+- ✅ Erstellt die `.env` Datei automatisch
+- ✅ Baut und startet den Container
+
+---
+
+#### Option A: Docker auf frischem Linux-Server (manuell)
 
 Wenn du einen frischen Debian/Ubuntu-Server hast, installiere zuerst die Voraussetzungen:
 
@@ -83,8 +109,11 @@ newgrp docker
 
 # Prüfen ob alles funktioniert
 docker --version
+docker-compose --version  # Sollte "docker-compose version 1.x.x" zeigen
 git --version
 ```
+
+> **Hinweis:** Je nach System heißt der Befehl `docker-compose` (mit Bindestrich, ältere Version) oder `docker compose` (mit Leerzeichen, neuere Version). Diese Anleitung verwendet `docker-compose`.
 
 Dann das Projekt installieren:
 
