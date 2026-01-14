@@ -215,6 +215,66 @@ class GrocyClient:
         
         return products_needing_reorder
 
+    def get_all_products_with_asin(self) -> list[Product]:
+        """
+        Ruft alle Produkte mit Amazon ASIN ab (inkl. aktuellem Bestand).
+        
+        Diese Methode wird für die Bestandsaktualisierung in Telegram verwendet.
+        
+        Returns:
+            Liste aller Produkte mit Amazon ASIN
+        """
+        products_with_asin = []
+        
+        # Hole Bestand und Mengeneinheiten
+        stock_data = self.get_stock()
+        quantity_units = self.get_quantity_units()
+        
+        for item in stock_data:
+            product_info = item.get("product", {})
+            product_id = product_info.get("id")
+            
+            if not product_id:
+                continue
+            
+            # Hole benutzerdefinierte Felder
+            try:
+                userfields = self.get_product_userfields(product_id)
+            except GrocyAPIError:
+                userfields = {}
+            
+            amazon_asin = userfields.get(self.asin_field)
+            
+            # Nur Produkte mit Amazon ASIN
+            if not amazon_asin or not amazon_asin.strip():
+                continue
+            
+            stock_amount = float(item.get("amount", 0))
+            min_stock = float(product_info.get("min_stock_amount", 0))
+            
+            try:
+                order_units = int(userfields.get(self.order_units_field, 1))
+            except (ValueError, TypeError):
+                order_units = 1
+            
+            qu_id = product_info.get("qu_id_stock", 1)
+            qu_name = quantity_units.get(qu_id, "Stück")
+            
+            product = Product(
+                id=product_id,
+                name=product_info.get("name", f"Produkt {product_id}"),
+                stock_amount=stock_amount,
+                stock_min_amount=min_stock,
+                qu_id_stock=qu_id,
+                qu_name=qu_name,
+                amazon_asin=amazon_asin.strip(),
+                amazon_order_units=order_units,
+            )
+            
+            products_with_asin.append(product)
+        
+        return products_with_asin
+
     def add_to_shopping_list(
         self, 
         product_id: int, 

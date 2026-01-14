@@ -133,8 +133,15 @@ class GrocyAutoOrderDaemon:
         logger.info("=== Starte Bestandsprüfung ===")
         
         try:
+            # Hole ALLE Produkte mit Amazon-ASIN für Bestandsaktualisierung
+            all_products = self.grocy.get_all_products_with_asin()
+            
+            # Aktualisiere Telegram-Nachrichten mit aktuellem Bestand
+            if all_products:
+                self.order_service.update_telegram_stocks(all_products)
+            
             # Hole Produkte unter Mindestbestand
-            products = self.grocy.get_products_below_min_stock()
+            products = [p for p in all_products if p.needs_reorder] if all_products else []
             
             if not products:
                 logger.info("Keine Produkte unter Mindestbestand gefunden")
@@ -177,10 +184,17 @@ class GrocyAutoOrderDaemon:
         interval = self.settings.order.check_interval_minutes
         logger.info(f"Starte Daemon - Prüfintervall: {interval} Minuten")
         
+        # Telegram Polling starten (für Button Callbacks)
+        if self.telegram:
+            self.telegram.start_polling()
+            logger.info("Telegram Button-Polling gestartet")
+        
         # Signal Handler für sauberes Beenden
         def signal_handler(signum, frame):
             logger.info("Signal empfangen, beende...")
             self.running = False
+            if self.telegram:
+                self.telegram.stop_polling()
         
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
@@ -196,6 +210,10 @@ class GrocyAutoOrderDaemon:
         while self.running:
             schedule.run_pending()
             time.sleep(10)
+        
+        # Aufräumen
+        if self.telegram:
+            self.telegram.stop_polling()
         
         logger.info("Daemon beendet")
 

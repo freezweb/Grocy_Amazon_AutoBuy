@@ -362,11 +362,12 @@ class OrderService:
         except HomeAssistantError as e:
             logger.error(f"Home Assistant Benachrichtigung fehlgeschlagen: {e}")
         
-        # Telegram Benachrichtigung (mit klickbarem Link)
+        # Telegram Benachrichtigung (mit klickbarem Link und Buttons)
         if self.telegram and not failed:
             try:
                 self.telegram.send_order_notification(
                     product_name=product.name,
+                    product_id=product.id,
                     quantity=order.quantity,
                     asin=product.amazon_asin,
                     current_stock=product.stock_amount,
@@ -398,6 +399,29 @@ class OrderService:
             orders.append(order)
         
         return orders
+
+    def update_telegram_stocks(self, products: list[Product]):
+        """
+        Aktualisiert die Bestandsanzeige in Telegram für alle getrackten Produkte.
+        
+        Args:
+            products: Liste aller Produkte mit aktuellem Bestand
+        """
+        if not self.telegram:
+            return
+        
+        # Erstelle ein Mapping von ASIN zu aktuellem Bestand
+        stock_by_asin = {
+            p.amazon_asin: p.stock_amount 
+            for p in products 
+            if p.amazon_asin
+        }
+        
+        # Aktualisiere alle getrackten Nachrichten
+        for asin in list(self.telegram.tracked_messages.keys()):
+            if asin in stock_by_asin:
+                new_stock = stock_by_asin[asin]
+                self.telegram.update_stock(asin, new_stock)
 
     def get_status_summary(self) -> dict:
         """
