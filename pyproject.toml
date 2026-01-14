@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "grocy-amazon-autobuy"
+version = "1.0.0"
+description = "Automatische Amazon-Nachbestellung basierend auf Grocy Mindestbeständen via Home Assistant & Alexa"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Grocy Amazon AutoBuy Contributors" }
+]
+keywords = ["grocy", "amazon", "alexa", "home-assistant", "automation", "shopping"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Home Automation",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "pyyaml>=6.0",
+    "schedule>=1.2.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+grocy-autobuy = "grocy_amazon_autobuy.main:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/Grocy_Amazon_AutoBuy"
+Repository = "https://github.com/yourusername/Grocy_Amazon_AutoBuy"
+Issues = "https://github.com/yourusername/Grocy_Amazon_AutoBuy/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/grocy_amazon_autobuy"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true

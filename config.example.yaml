@@ -1,0 +1,76 @@
+# ============================================
+# Grocy Amazon AutoBuy - YAML Konfiguration
+# ============================================
+# Alternative zur .env Datei
+# Umgebungsvariablen überschreiben diese Werte
+# ============================================
+
+grocy:
+  # Grocy Server URL
+  url: "http://localhost:9283"
+  
+  # API Key aus Grocy -> Einstellungen -> API-Schlüssel verwalten
+  api_key: ""
+  
+  # Namen der benutzerdefinierten Felder (Userfields) in Grocy
+  # Diese müssen vorher in Grocy angelegt werden unter:
+  # Einstellungen -> Benutzerdefinierte Felder -> Produkte
+  asin_field: "Amazon_ASIN"
+  order_units_field: "Amazon_bestelleinheiten"
+
+homeassistant:
+  # Home Assistant URL
+  url: "http://homeassistant.local:8123"
+  
+  # Long-Lived Access Token
+  # Erstellen unter: Profil -> Langlebige Zugriffstokens
+  token: ""
+  
+  # Alexa Media Player Entity ID
+  # Finde die Entity unter: Entwicklerwerkzeuge -> Zustände
+  alexa_entity_id: "media_player.echo_dot"
+  
+  # Shopping List verwenden (empfohlen)
+  use_shopping_list: true
+  
+  # Alexa Shopping List Entity
+  # Benötigt Alexa Media Player Integration mit Shopping List
+  shopping_list_entity: "todo.alexa_shopping_list"
+
+order:
+  # Bestellmodus:
+  # - voice_order: Direkte Bestellung via Alexa Sprachbefehl (VOLLAUTOMATISCH)
+  # - shopping_list: Fügt zur Alexa Einkaufsliste hinzu
+  # - notify_only: Nur Benachrichtigungen, keine Bestellung
+  #
+  # Für voice_order muss in der Alexa App aktiviert sein:
+  # - Einstellungen → Konto → Spracheinkauf: AN
+  # - Bestätigungscode: AUS
+  mode: "voice_order"
+  
+  # Prüfintervall in Minuten
+  check_interval_minutes: 60
+  
+  # Maximale Bestellungen pro Tag
+  max_orders_per_day: 10
+  
+  # Bestätigung vor jeder Bestellung erforderlich
+  require_confirmation: false
+  
+  # Testmodus - keine echten Bestellungen
+  # WICHTIG: Auf false setzen für Produktivbetrieb!
+  dry_run: true
+  
+  # Benachrichtigungen aktivieren
+  notify_on_order: true
+  
+  # Home Assistant Notification Service
+  # Beispiele: 
+  # - notify.persistent_notification (Standard)
+  # - notify.mobile_app_mein_handy
+  # - notify.telegram
+  notification_service: "notify.persistent_notification"
+
+# Logging
+log_level: "INFO"
+# log_file: "/var/log/grocy-autobuy.log"

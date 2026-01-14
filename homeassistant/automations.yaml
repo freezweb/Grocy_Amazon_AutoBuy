@@ -1,0 +1,110 @@
+# ============================================
+# Grocy Amazon AutoBuy - Home Assistant Automationen
+# ============================================
+# Füge diese Automationen zu deiner configuration.yaml oder 
+# automations.yaml hinzu
+# ============================================
+
+# Alternative 1: Shell Command für das Python Script
+shell_command:
+  grocy_autobuy_check: "python3 /path/to/grocy-autobuy/main.py --check"
+
+# Alternative 2: REST Command (wenn als API verfügbar)
+rest_command:
+  grocy_check_stock:
+    url: "http://grocy-autobuy:8080/api/check"
+    method: POST
+
+# ============================================
+# Automation: Regelmäßige Bestandsprüfung
+# ============================================
+automation:
+  - id: grocy_autobuy_scheduled_check
+    alias: "Grocy AutoBuy - Geplante Bestandsprüfung"
+    description: "Prüft regelmäßig Grocy-Bestände und bestellt bei Amazon nach"
+    
+    trigger:
+      # Jeden Tag um 10:00 Uhr
+      - platform: time
+        at: "10:00:00"
+      # Und um 18:00 Uhr
+      - platform: time
+        at: "18:00:00"
+    
+    condition:
+      # Nur wenn zuhause (optional)
+      # - condition: state
+      #   entity_id: person.ich
+      #   state: "home"
+      []
+    
+    action:
+      - service: shell_command.grocy_autobuy_check
+
+  # ============================================
+  # Automation: Manuelle Prüfung per Alexa
+  # ============================================
+  - id: grocy_autobuy_voice_trigger
+    alias: "Grocy AutoBuy - Sprachbefehl"
+    description: "Alexa: 'Prüfe Grocy Bestände'"
+    
+    trigger:
+      - platform: event
+        event_type: alexa_actionable_notification
+        event_data:
+          event_id: "grocy_check_stock"
+    
+    action:
+      - service: shell_command.grocy_autobuy_check
+      - service: notify.alexa_media
+        data:
+          target: media_player.echo_dot
+          message: "Bestandsprüfung wurde gestartet"
+          data:
+            type: announce
+
+  # ============================================
+  # Automation: Benachrichtigung bei Bestellung
+  # ============================================
+  - id: grocy_autobuy_order_notification
+    alias: "Grocy AutoBuy - Bestellbenachrichtigung"
+    description: "Sendet Push-Nachricht wenn bestellt wurde"
+    
+    trigger:
+      - platform: event
+        event_type: grocy_autobuy_order
+    
+    action:
+      - service: notify.mobile_app_mein_handy
+        data:
+          title: "🛒 Amazon Bestellung"
+          message: "{{ trigger.event.data.message }}"
+          data:
+            tag: "grocy_order"
+            actions:
+              - action: "CONFIRM_ORDER"
+                title: "Bestätigen"
+              - action: "CANCEL_ORDER"
+                title: "Abbrechen"
+
+# ============================================
+# Input Boolean für Aktivierung/Deaktivierung
+# ============================================
+input_boolean:
+  grocy_autobuy_enabled:
+    name: "Grocy AutoBuy aktiv"
+    icon: mdi:cart-arrow-down
+
+# ============================================
+# Sensor für Status (optional)
+# ============================================
+sensor:
+  - platform: rest
+    name: Grocy AutoBuy Status
+    resource: http://grocy-autobuy:8080/api/status
+    json_attributes:
+      - orders_today
+      - last_check
+      - dry_run
+    value_template: "{{ value_json.mode }}"
+    scan_interval: 300

@@ -1,0 +1,64 @@
+# ============================================
+# Grocy Amazon AutoBuy - Docker Compose
+# ============================================
+# Starten mit: docker-compose up -d
+# Logs: docker-compose logs -f
+# ============================================
+
+services:
+  grocy-autobuy:
+    build: .
+    container_name: grocy-autobuy
+    restart: unless-stopped
+    
+    # Umgebungsvariablen (alternative: .env Datei)
+    environment:
+      # Grocy
+      - GROCY_URL=http://grocy:80
+      - GROCY_API_KEY=${GROCY_API_KEY}
+      - GROCY_ASIN_FIELD=Amazon_ASIN
+      - GROCY_ORDER_UNITS_FIELD=Amazon_bestelleinheiten
+      
+      # Home Assistant
+      - HASS_URL=http://homeassistant:8123
+      - HASS_TOKEN=${HASS_TOKEN}
+      - HASS_ALEXA_ENTITY_ID=media_player.echo_dot
+      - HASS_USE_SHOPPING_LIST=true
+      - HASS_SHOPPING_LIST_ENTITY=todo.alexa_shopping_list
+      
+      # Bestellung
+      - ORDER_MODE=shopping_list
+      - ORDER_CHECK_INTERVAL=60
+      - ORDER_MAX_PER_DAY=10
+      - ORDER_DRY_RUN=true
+      - ORDER_NOTIFY=true
+      - ORDER_NOTIFICATION_SERVICE=notify.persistent_notification
+      
+      # Logging
+      - LOG_LEVEL=INFO
+    
+    # Alternativ: .env Datei verwenden
+    # env_file:
+    #   - .env
+    
+    # Persistente Daten
+    volumes:
+      - ./data:/app/data
+      # Optional: Eigene Konfigurationsdatei
+      # - ./config.yaml:/app/config.yaml:ro
+    
+    # Netzwerk (falls Grocy/HA im gleichen Compose Stack)
+    # networks:
+    #   - grocy_network
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Optional: Netzwerk Definition
+# networks:
+#   grocy_network:
+#     external: true
