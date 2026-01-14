@@ -16,6 +16,7 @@ from .config import Settings, load_settings
 from .grocy_client import GrocyClient, GrocyAPIError
 from .homeassistant_client import HomeAssistantClient, HomeAssistantError
 from .order_service import OrderService
+from .telegram_client import TelegramClient
 
 # Logging Setup
 logger = logging.getLogger("grocy_amazon_autobuy")
@@ -75,10 +76,17 @@ class GrocyAutoOrderDaemon:
         # Clients initialisieren
         self.grocy = GrocyClient(settings.grocy)
         self.hass = HomeAssistantClient(settings.homeassistant)
+        
+        # Telegram Client (optional)
+        self.telegram = None
+        if settings.telegram and settings.telegram.enabled:
+            self.telegram = TelegramClient(settings.telegram)
+        
         self.order_service = OrderService(
             hass_client=self.hass,
             order_settings=settings.order,
-            history_file=Path("data/order_history.json")
+            history_file=Path("data/order_history.json"),
+            telegram_client=self.telegram
         )
 
     def check_connections(self) -> bool:
@@ -99,6 +107,13 @@ class GrocyAutoOrderDaemon:
         if not self.hass.test_connection():
             logger.error("Home Assistant Verbindung fehlgeschlagen!")
             return False
+        
+        # Telegram (optional)
+        if self.telegram:
+            if self.telegram.test_connection():
+                logger.info("Telegram Verbindung OK")
+            else:
+                logger.warning("Telegram Verbindung fehlgeschlagen - Benachrichtigungen deaktiviert")
         
         # Alexa verfügbar?
         if self.settings.order.mode == "voice_command":

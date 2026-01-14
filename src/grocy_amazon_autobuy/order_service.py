@@ -14,8 +14,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from .config import OrderSettings
+from .config import OrderSettings, TelegramSettings
 from .homeassistant_client import HomeAssistantClient, HomeAssistantError
+from .telegram_client import TelegramClient
 from .models import OrderHistory, OrderRequest, OrderStatus, Product
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,8 @@ class OrderService:
         self,
         hass_client: HomeAssistantClient,
         order_settings: OrderSettings,
-        history_file: Optional[Path] = None
+        history_file: Optional[Path] = None,
+        telegram_client: Optional[TelegramClient] = None
     ):
         """
         Initialisiert den Order Service.
@@ -37,11 +39,13 @@ class OrderService:
             hass_client: Home Assistant Client
             order_settings: Bestellungs-Konfiguration
             history_file: Pfad zur History-Datei (optional)
+            telegram_client: Telegram Client für Benachrichtigungen (optional)
         """
         self.hass = hass_client
         self.settings = order_settings
         self.history_file = history_file or Path("order_history.json")
         self.history = self._load_history()
+        self.telegram = telegram_client
 
     def _load_history(self) -> OrderHistory:
         """Lädt den Bestellverlauf aus der Datei."""
@@ -348,6 +352,7 @@ class OrderService:
                     f"ASIN: {product.amazon_asin}"
                 )
         
+        # Home Assistant Benachrichtigung
         try:
             self.hass.send_notification(
                 title=title,
@@ -355,7 +360,25 @@ class OrderService:
                 service=self.settings.notification_service
             )
         except HomeAssistantError as e:
-            logger.error(f"Benachrichtigung fehlgeschlagen: {e}")
+            logger.error(f"Home Assistant Benachrichtigung fehlgeschlagen: {e}")
+        
+        # Telegram Benachrichtigung (mit klickbarem Link)
+        if self.telegram:
+            try:
+                self.telegram.send_order_notification(
+                    product_name=product.name,
+                    quantity=order.quantity,
+                    unit=product.amazon_order_unit or product.qu_name,
+                    asin=product.amazon_asin,
+                    cart_url=cart_url,
+                    stock_current=product.stock_amount,
+                    stock_min=product.stock_min_amount,
+                    failed=failed,
+                    dry_run=dry_run,
+                    error_message=order.error_message if failed else None
+                )
+            except Exception as e:
+                logger.error(f"Telegram Benachrichtigung fehlgeschlagen: {e}")
 
     def process_products(self, products: list[Product]) -> list[OrderRequest]:
         """

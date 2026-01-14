@@ -82,6 +82,31 @@ class HomeAssistantSettings(BaseSettings):
     )
 
 
+class TelegramSettings(BaseSettings):
+    """Telegram Bot Konfiguration."""
+
+    enabled: bool = Field(
+        default=False,
+        description="Telegram Benachrichtigungen aktivieren",
+        alias="TELEGRAM_ENABLED",
+    )
+    bot_token: str = Field(
+        default="",
+        description="Telegram Bot Token (von @BotFather)",
+        alias="TELEGRAM_BOT_TOKEN",
+    )
+    chat_id: str = Field(
+        default="",
+        description="Telegram Chat ID für Benachrichtigungen",
+        alias="TELEGRAM_CHAT_ID",
+    )
+
+    model_config = SettingsConfigDict(
+        env_prefix="TELEGRAM_",
+        extra="ignore",
+    )
+
+
 class OrderSettings(BaseSettings):
     """Bestellungs-Konfiguration."""
 
@@ -150,6 +175,7 @@ class Settings(BaseSettings):
 
     grocy: GrocySettings = Field(default_factory=GrocySettings)
     homeassistant: HomeAssistantSettings = Field(default_factory=HomeAssistantSettings)
+    telegram: TelegramSettings = Field(default_factory=TelegramSettings)
     order: OrderSettings = Field(default_factory=OrderSettings)
     
     # Logging
@@ -196,5 +222,6 @@ def load_settings(config_path: Optional[Path] = None) -> Settings:
     return Settings(
         grocy=GrocySettings(**settings_dict.get("grocy", {})),
         homeassistant=HomeAssistantSettings(**settings_dict.get("homeassistant", {})),
+        telegram=TelegramSettings(**settings_dict.get("telegram", {})),
         order=OrderSettings(**settings_dict.get("order", {})),
     )
