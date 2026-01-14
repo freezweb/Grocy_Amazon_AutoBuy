@@ -136,18 +136,25 @@ class TelegramClient:
         except Exception as e:
             logger.error(f"Fehler beim Speichern der Telegram-Nachrichten: {e}")
 
-    def _create_inline_keyboard(self, asin: str, ordered: bool = False) -> dict:
+    def _create_inline_keyboard(self, asin: str, ordered: bool = False, delivered: bool = False) -> dict:
         """
         Erstellt Inline Keyboard Buttons.
         
         Args:
             asin: Amazon ASIN für Callback
             ordered: Ob bereits bestellt wurde
+            delivered: Ob als geliefert markiert wurde
             
         Returns:
             Inline Keyboard Markup
         """
-        if ordered:
+        if delivered:
+            # Nach Geliefert-Markierung: Nur Info-Text (warten auf Grocy-Einbuchung)
+            buttons = [[
+                {"text": "✅ Bestellt", "callback_data": "noop"},
+                {"text": "📦 Geliefert (wartet auf Einbuchung)", "callback_data": "noop"}
+            ]]
+        elif ordered:
             # Nach Bestellung: Geliefert-Button
             buttons = [[
                 {"text": "✅ Bestellt", "callback_data": "noop"},
@@ -172,11 +179,14 @@ class TelegramClient:
         unit: str,
         cart_url: str,
         ordered: bool = False,
-        ordered_at: Optional[datetime] = None
+        ordered_at: Optional[datetime] = None,
+        delivered: bool = False
     ) -> str:
         """Formatiert die Bestell-Nachricht."""
         status = ""
-        if ordered:
+        if delivered:
+            status = f"\n\n📦 <i>Als geliefert markiert - warte auf Grocy-Einbuchung</i>"
+        elif ordered:
             status = f"\n\n✅ <i>Bestellt am {ordered_at.strftime('%d.%m.%Y %H:%M') if ordered_at else 'unbekannt'}</i>"
         
         return (
@@ -467,10 +477,11 @@ class TelegramClient:
             unit=msg.unit,
             cart_url=msg.cart_url,
             ordered=msg.ordered,
-            ordered_at=msg.ordered_at
+            ordered_at=msg.ordered_at,
+            delivered=msg.delivered
         )
         
-        reply_markup = self._create_inline_keyboard(asin, ordered=msg.ordered)
+        reply_markup = self._create_inline_keyboard(asin, ordered=msg.ordered, delivered=msg.delivered)
         
         return self.edit_message(
             message_id=msg.message_id,
@@ -511,7 +522,8 @@ class TelegramClient:
 
     def mark_as_delivered(self, asin: str) -> bool:
         """
-        Markiert ein Produkt als geliefert und löscht die Nachricht.
+        Markiert ein Produkt als geliefert (Button-Klick).
+        Löscht die Nachricht NICHT - das passiert automatisch bei Grocy-Einbuchung.
         
         Args:
             asin: Amazon ASIN
@@ -526,28 +538,61 @@ class TelegramClient:
         msg = self.tracked_messages[asin]
         msg.delivered = True
         msg.delivered_at = datetime.now()
-        
-        # Sende Bestätigung
-        self.send_message(
-            f"📦 <b>{msg.product_name}</b> wurde als geliefert markiert!\n"
-            f"Menge: {msg.quantity}x {msg.unit}"
-        )
-        
-        # Lösche die ursprüngliche Bestellnachricht
-        self.delete_message(msg.message_id)
-        
-        # Callback aufrufen
-        if self.on_delivered_callback:
-            try:
-                self.on_delivered_callback(asin, msg.product_id)
-            except Exception as e:
-                logger.error(f"Delivered Callback Fehler: {e}")
-        
-        # Entferne aus Tracking
-        del self.tracked_messages[asin]
         self._save_tracked_messages()
         
-        return True
+        # Aktualisiere Nachricht mit Geliefert-Status
+        return self._update_message_content(asin)
+
+    def check_stock_and_cleanup(self, asin: str, current_stock: float) -> bool:
+        """
+        Prüft ob Bestand wieder aufgefüllt wurde und löscht die Nachricht.
+        Wird aufgerufen wenn Bestand in Grocy eingebucht wird.
+        
+        Args:
+            asin: Amazon ASIN
+            current_stock: Aktueller Bestand aus Grocy
+            
+        Returns:
+            True wenn Nachricht gelöscht wurde
+        """
+        if asin not in self.tracked_messages:
+            return False
+        
+        msg = self.tracked_messages[asin]
+        
+        # Wenn Bestand >= Mindestbestand, wurde Lieferung eingebucht
+        if current_stock >= msg.min_stock:
+            logger.info(f"Bestand von {msg.product_name} aufgefüllt ({current_stock}/{msg.min_stock}), lösche Nachricht")
+            
+            # Sende Bestätigung
+            self.send_message(
+                f"✅ <b>{msg.product_name}</b> - Lieferung eingebucht!\n"
+                f"Neuer Bestand: {current_stock} {msg.unit} (Min: {msg.min_stock})"
+            )
+            
+            # Lösche die Bestellnachricht
+            self.delete_message(msg.message_id)
+            
+            # Callback aufrufen
+            if self.on_delivered_callback:
+                try:
+                    self.on_delivered_callback(asin, msg.product_id)
+                except Exception as e:
+                    logger.error(f"Delivered Callback Fehler: {e}")
+            
+            # Entferne aus Tracking
+            del self.tracked_messages[asin]
+            self._save_tracked_messages()
+            
+            return True
+        
+        # Bestand aktualisieren wenn noch unter Minimum
+        if msg.current_stock != current_stock:
+            msg.current_stock = current_stock
+            self._save_tracked_messages()
+            self._update_message_content(asin)
+        
+        return False
 
     def cancel_order(self, asin: str) -> bool:
         """

@@ -403,6 +403,7 @@ class OrderService:
     def update_telegram_stocks(self, products: list[Product]):
         """
         Aktualisiert die Bestandsanzeige in Telegram für alle getrackten Produkte.
+        Löscht Nachrichten automatisch wenn Bestand >= Mindestbestand (Lieferung eingebucht).
         
         Args:
             products: Liste aller Produkte mit aktuellem Bestand
@@ -417,11 +418,13 @@ class OrderService:
             if p.amazon_asin
         }
         
-        # Aktualisiere alle getrackten Nachrichten
+        # Prüfe alle getrackten Nachrichten
         for asin in list(self.telegram.tracked_messages.keys()):
             if asin in stock_by_asin:
                 new_stock = stock_by_asin[asin]
-                self.telegram.update_stock(asin, new_stock)
+                # check_stock_and_cleanup löscht die Nachricht wenn Bestand >= Mindestbestand
+                # und aktualisiert ansonsten nur den Bestand
+                self.telegram.check_stock_and_cleanup(asin, new_stock)
 
     def get_status_summary(self) -> dict:
         """
