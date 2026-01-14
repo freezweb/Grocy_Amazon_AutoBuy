@@ -2,9 +2,10 @@
 Amazon Order Service - Orchestriert die Bestellungen über verschiedene Kanäle.
 
 Unterstützte Bestellmodi:
-1. shopping_list - Fügt Artikel zur Alexa Einkaufsliste hinzu (empfohlen)
-2. voice_command - Sendet Sprachbefehle an Alexa (eingeschränkt)
-3. notify_only - Nur Benachrichtigungen, keine automatische Bestellung
+1. cart_link - Sendet Benachrichtigung mit direktem Amazon-Warenkorb-Link (EMPFOHLEN)
+2. shopping_list - Fügt Artikel zur Alexa Einkaufsliste hinzu
+3. voice_command - Sendet Sprachbefehle an Alexa (eingeschränkt)
+4. notify_only - Nur Benachrichtigungen, keine automatische Bestellung
 """
 
 import json
@@ -182,7 +183,13 @@ class OrderService:
         try:
             success = False
             
-            if self.settings.mode == "voice_order":
+            if self.settings.mode == "cart_link":
+                # Neuer Modus: Direkte Warenkorb-Links
+                success = True
+                order.status = OrderStatus.PENDING
+                order.error_message = "Warenkorb-Link gesendet"
+            
+            elif self.settings.mode == "voice_order":
                 success = self._order_via_voice(product)
                 if success:
                     order.status = OrderStatus.VOICE_ORDERED
@@ -268,6 +275,22 @@ class OrderService:
             quantity=product.packages_to_order
         )
 
+    def _create_amazon_cart_url(self, asin: str, quantity: int = 1) -> str:
+        """
+        Erstellt eine Amazon-URL, die das Produkt direkt zum Warenkorb hinzufügt.
+        
+        Args:
+            asin: Amazon ASIN
+            quantity: Anzahl
+            
+        Returns:
+            URL zum Hinzufügen in den Warenkorb
+        """
+        # Amazon Cart Add URL - funktioniert für amazon.de
+        # Format: https://www.amazon.de/gp/aws/cart/add.html?ASIN.1=XXX&Quantity.1=Y
+        base_url = "https://www.amazon.de/gp/aws/cart/add.html"
+        return f"{base_url}?ASIN.1={asin}&Quantity.1={quantity}"
+
     def _notify_order(
         self, 
         order: OrderRequest, 
@@ -287,6 +310,9 @@ class OrderService:
         
         product = order.product
         
+        # Amazon Warenkorb-Link erstellen
+        cart_url = self._create_amazon_cart_url(product.amazon_asin, order.quantity)
+        
         if failed:
             title = "❌ Bestellung fehlgeschlagen"
             message = (
@@ -298,11 +324,18 @@ class OrderService:
             message = (
                 f"Würde bestellen: {product.get_order_description()}\n"
                 f"ASIN: {product.amazon_asin}\n"
-                f"Bestand: {product.stock_amount}/{product.stock_min_amount} {product.qu_name}"
+                f"Bestand: {product.stock_amount}/{product.stock_min_amount} {product.qu_name}\n"
+                f"Warenkorb-Link: {cart_url}"
             )
         else:
             title = "🛒 Amazon Bestellung"
-            if self.settings.mode == "shopping_list":
+            if self.settings.mode == "cart_link":
+                message = (
+                    f"Produkt unter Mindestbestand!\n"
+                    f"{product.get_order_description()}\n\n"
+                    f"👉 In den Warenkorb: {cart_url}"
+                )
+            elif self.settings.mode == "shopping_list":
                 message = (
                     f"Zur Alexa Einkaufsliste hinzugefügt:\n"
                     f"{product.get_order_description()}\n"

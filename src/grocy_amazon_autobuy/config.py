@@ -131,7 +131,7 @@ class OrderSettings(BaseSettings):
     @field_validator("mode")
     @classmethod
     def validate_mode(cls, v: str) -> str:
-        valid_modes = ["voice_order", "shopping_list", "notify_only"]
+        valid_modes = ["cart_link", "voice_order", "shopping_list", "notify_only"]
         # Alias für Rückwärtskompatibilität
         if v == "voice_command":
             v = "voice_order"
