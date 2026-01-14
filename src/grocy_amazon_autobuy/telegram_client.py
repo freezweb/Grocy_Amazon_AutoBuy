@@ -192,11 +192,11 @@ class TelegramClient:
         return (
             f"🛒 <b>Amazon Nachbestellung</b>\n\n"
             f"<b>{product_name}</b>\n"
-            f"Menge: {quantity}x {unit}\n"
             f"ASIN: <code>{asin}</code>\n\n"
-            f"📊 Bestand: <b>{current_stock}/{min_stock}</b> {unit}"
+            f"📊 Bestand: <b>{current_stock:.0f}/{min_stock:.0f}</b> {unit}\n"
+            f"📦 Bestellen: <b>{quantity}x</b> Paket"
             f"{status}\n\n"
-            f"👉 <a href=\"{cart_url}\">In den Warenkorb legen</a>"
+            f"👉 <a href=\"{cart_url}\">Auf Amazon öffnen</a>"
         )
 
     def send_message(

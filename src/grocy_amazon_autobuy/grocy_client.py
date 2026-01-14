@@ -186,8 +186,14 @@ class GrocyClient:
             
             # Bestelleinheiten (Standard: 1)
             try:
-                order_units = int(userfields.get(self.order_units_field, 1))
-            except (ValueError, TypeError):
+                raw_order_units = userfields.get(self.order_units_field)
+                logger.debug(f"Userfield '{self.order_units_field}' für {product_info.get('name')}: {raw_order_units} (type: {type(raw_order_units).__name__})")
+                if raw_order_units is not None and str(raw_order_units).strip():
+                    order_units = int(raw_order_units)
+                else:
+                    order_units = 1
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Ungültiger Wert für Bestelleinheiten: {raw_order_units} - {e}")
                 order_units = 1
             
             # QU Name

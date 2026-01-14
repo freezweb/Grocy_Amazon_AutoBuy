@@ -281,19 +281,20 @@ class OrderService:
 
     def _create_amazon_cart_url(self, asin: str, quantity: int = 1) -> str:
         """
-        Erstellt eine Amazon-URL, die das Produkt direkt zum Warenkorb hinzufügt.
+        Erstellt eine Amazon-URL für das Produkt.
+        
+        Hinweis: Die Cart-Add URL funktioniert nicht mehr zuverlässig,
+        daher verlinken wir direkt auf die Produktseite.
         
         Args:
             asin: Amazon ASIN
-            quantity: Anzahl
+            quantity: Anzahl (wird im Link-Text angezeigt)
             
         Returns:
-            URL zum Hinzufügen in den Warenkorb
+            URL zur Amazon Produktseite
         """
-        # Amazon Cart Add URL - funktioniert für amazon.de
-        # Format: https://www.amazon.de/gp/aws/cart/add.html?ASIN.1=XXX&Quantity.1=Y
-        base_url = "https://www.amazon.de/gp/aws/cart/add.html"
-        return f"{base_url}?ASIN.1={asin}&Quantity.1={quantity}"
+        # Direkte Produktseite - zuverlässiger als Cart-Add API
+        return f"https://www.amazon.de/dp/{asin}"
 
     def _notify_order(
         self, 
